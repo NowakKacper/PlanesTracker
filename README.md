@@ -14,7 +14,7 @@ https://www.youtube.com/watch?v=b8HkUuGfits&ab_channel=KacperNowak
 - If information is available for a plane, you can check where it is coming from
 - Thanks to live data updates, you can check how the plane is moving
 
- ## Tools which I used to build server side of this app 
+ ## Tools which I used to build app 
  - Java 
  - Spring
  - Spring Boot
