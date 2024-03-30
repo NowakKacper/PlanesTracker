@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plane Tracker</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+
+    <style>#map { height: 1080px; }</style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <script th:inline="javascript">
+
+        var map = L.map('map').setView([48.5575, 12.9875], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var tracks = [[${tracks}]];
+
+        var planeIcon = L.icon({
+            iconUrl: 'plane.png',
+
+            iconSize:     [30, 30],
+            iconAnchor:   [15, 15],
+            popupAnchor:  [3, -15]
+        });
+
+        tracks.forEach(value => {
+            var polygon;
+            var popupContent = `
+                            <b>Callsign:</b> ${value.callsign}<br>
+                            <b>Origin Country:</b> ${value.originCountry}<br>
+                            <b>Time Position:</b> ${value.timePosition}<br>
+                            <b>Barometric Altitude:</b> ${value.baroAltitude} <b>m</b> <br>
+                            <b>Velocity:</b> ${value.velocity} <b>m/s</b> <br>
+                        `;
+            console.log("Y:" + value.y, "X:" + value.x)
+            L.marker([value.y, value.x], {icon: planeIcon}).addTo(map)
+                .bindPopup(popupContent)
+                .openPopup()
+                .on('mouseover', () => {
+                    polygon = L.polygon([
+                        [value.y, value.x],
+                        [value.startingPoint.y, value.startingPoint.x],
+                    ]).addTo(map);
+                })
+                .on('mouseout', () => {
+                    map.removeLayer(polygon);
+                });
+        });
+
+        function fetchDataAndPlotPlanes() {
+            fetch('/update')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data  => {
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    data.forEach(value => {
+                        var polygon;
+                        var popupContent = `
+                            <b>Callsign:</b> ${value.callsign}<br>
+                            <b>Origin Country:</b> ${value.originCountry}<br>
+                            <b>Time Position:</b> ${value.timePosition}<br>
+                            <b>Barometric Altitude:</b> ${value.baroAltitude} <b>m</b> <br>
+                            <b>Velocity:</b> ${value.velocity} <b>m/s</b> <br>
+                        `;
+                        console.log("Y:" + value.y, "X:" + value.x)
+                        L.marker([value.y, value.x], {icon: planeIcon}).addTo(map)
+                            .bindPopup(popupContent)
+                            .openPopup()
+                            .on('mouseover', () => {
+                                polygon = L.polygon([
+                                    [value.y, value.x],
+                                    [value.startingPoint.y, value.startingPoint.x],
+                                ]).addTo(map);
+                            })
+                            .on('mouseout', () => {
+                                map.removeLayer(polygon);
+                            });
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        setInterval(fetchDataAndPlotPlanes, 15000);
+    </script>
+</body>
+</html>
